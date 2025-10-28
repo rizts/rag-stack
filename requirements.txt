@@ -1,7 +1,9 @@
 langchain
+langchain-text-splitters
 langchain-google-genai
 qdrant-client
 fastapi
 uvicorn
 pydantic
+pydantic-settings
 python-dotenv
