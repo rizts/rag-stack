@@ -38,6 +38,16 @@ uvicorn app.main:app --reload
 ### 3. Check health endpoint
 Open http://localhost:8000/health
 
+
+## 🐳 Run Qdrant via Docker Compose
+
+You can run a local Qdrant vector database using docker-compose.
+
+```bash
+cd docker
+docker-compose up -d
+```
+
 ### **Project Structure**
 ```bash
 rag-stack/

@@ -1,43 +1,67 @@
 """
-Qdrant Vector Store integration using LangChain + Gemini Embeddings.
+Qdrant Vector Store integration using Gemini Embeddings.
+Fully compatible with LangChain 1.0.2 (no deprecated imports).
 """
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.vectorstores import Qdrant
+from typing import Any, Dict, List
 from qdrant_client import QdrantClient
+from qdrant_client.http.models import VectorParams, Distance
 from app.core.config import settings
 
-
-def get_qdrant_client() -> QdrantClient:
+# Minimal Document class to replace LangChain Document
+class Document:
     """
-    Initialize and return a Qdrant client instance.
-    Configuration values are loaded from environment via settings.
+    Simple document structure to hold content and metadata.
     """
-    return QdrantClient(
-        url=settings.QDRANT_URL,
-        api_key=settings.QDRANT_API_KEY,
-    )
+    def __init__(self, page_content: str, metadata: Dict[str, Any] = None):
+        self.page_content = page_content
+        self.metadata = metadata or {}
 
-
-def get_vectorstore(collection_name: str) -> Qdrant:
+class QdrantClientWrapper:
     """
-    Create or get a LangChain-compatible Qdrant vector store
-    using Gemini embeddings.
+    Wrapper around QdrantClient to provide a simple add/search interface
+    compatible with previous LangChain Qdrant usage.
     """
-    # Initialize Gemini Embeddings
-    embeddings = GoogleGenerativeAIEmbeddings(
-        model=settings.EMBEDDING_MODEL_NAME,
-        google_api_key=settings.GEMINI_API_KEY,
-    )
 
-    # Initialize Qdrant client
-    client = get_qdrant_client()
+    def __init__(self, collection_name: str):
+        self.collection_name = collection_name
+        self.client = QdrantClient(
+            url=settings.QDRANT_URL,
+            api_key=settings.QDRANT_API_KEY,
+        )
 
-    # Connect LangChain vectorstore
-    vectorstore = Qdrant(
-        client=client,
-        collection_name=collection_name,
-        embeddings=embeddings,
-    )
+        # Ensure collection exists
+        try:
+            self.client.get_collection(collection_name=collection_name)
+        except Exception:
+            self.client.recreate_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(
+                    size=1536,  # embedding dimension
+                    distance=Distance.COSINE
+                )
+            )
 
-    return vectorstore
+    def add_documents(self, documents: List[Document], embeddings: Any = None):
+        """
+        Add a list of Document objects with embeddings to Qdrant.
+        If embeddings object is provided, use it; otherwise assume vectors are precomputed.
+        """
+        vectors = [embeddings.embed_text(doc.page_content) for doc in documents] if embeddings else []
+        points = [
+            {"id": str(i), "vector": vec, "payload": {"content": doc.page_content, **doc.metadata}}
+            for i, (doc, vec) in enumerate(zip(documents, vectors))
+        ]
+        self.client.upsert(collection_name=self.collection_name, points=points)
+
+    def similarity_search(self, query: str, embeddings: Any, k: int = 5) -> List[Document]:
+        """
+        Search for top-k most similar documents using embeddings.
+        """
+        query_vector = embeddings.embed_text(query)
+        response = self.client.search(
+            collection_name=self.collection_name,
+            query_vector=query_vector,
+            limit=k
+        )
+        return [Document(page_content=p.payload.get("content", ""), metadata=p.payload) for p in response]
