@@ -2,7 +2,8 @@
 Centralized application configuration.
 """
 
-from pydantic import BaseSettings, Field
+from pydantic_settings import BaseSettings
+from pydantic import Field
 from typing import List
 
 class Settings(BaseSettings):
@@ -22,7 +23,12 @@ class Settings(BaseSettings):
     QDRANT_API_KEY: str | None = Field(None, description="Optional Qdrant API key")
 
     # === CORS / Frontend ===
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ORIGINS: str = "http://localhost:3000"
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Split CORS_ORIGINS env into a list automatically."""
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
 
     class Config:
         env_file = ".env"
