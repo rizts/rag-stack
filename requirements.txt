@@ -1,6 +1,7 @@
+langchain
+langchain-google-genai
+qdrant-client
 fastapi
 uvicorn
-langchain
-qdrant-client
 pydantic
 python-dotenv
