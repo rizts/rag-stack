@@ -1,6 +1,6 @@
 """
 Qdrant Vector Store integration using Gemini Embeddings.
-Fully compatible with LangChain 1.0.2 (no deprecated imports).
+Includes similarity scores.
 """
 
 from typing import Any, Dict, List
@@ -8,19 +8,19 @@ from qdrant_client import QdrantClient
 from qdrant_client.http.models import VectorParams, Distance
 from app.core.config import settings
 
-# Minimal Document class to replace LangChain Document
+# Minimal Document class
 class Document:
     """
-    Simple document structure to hold content and metadata.
+    Simple document structure to hold content, metadata, and optional score.
     """
-    def __init__(self, page_content: str, metadata: Dict[str, Any] = None):
+    def __init__(self, page_content: str, metadata: Dict[str, Any] = None, score: float = None):
         self.page_content = page_content
         self.metadata = metadata or {}
+        self.score = score
 
 class QdrantClientWrapper:
     """
-    Wrapper around QdrantClient to provide a simple add/search interface
-    compatible with previous LangChain Qdrant usage.
+    Wrapper around QdrantClient to provide add/search interface with score support.
     """
 
     def __init__(self, collection_name: str):
@@ -42,12 +42,11 @@ class QdrantClientWrapper:
                 )
             )
 
-    def add_documents(self, documents: List[Document], embeddings: Any = None):
+    def add_documents(self, documents: List[Document], embeddings: Any):
         """
         Add a list of Document objects with embeddings to Qdrant.
-        If embeddings object is provided, use it; otherwise assume vectors are precomputed.
         """
-        vectors = [embeddings.embed_text(doc.page_content) for doc in documents] if embeddings else []
+        vectors = [embeddings.embed_text(doc.page_content) for doc in documents]
         points = [
             {"id": str(i), "vector": vec, "payload": {"content": doc.page_content, **doc.metadata}}
             for i, (doc, vec) in enumerate(zip(documents, vectors))
@@ -56,7 +55,7 @@ class QdrantClientWrapper:
 
     def similarity_search(self, query: str, embeddings: Any, k: int = 5) -> List[Document]:
         """
-        Search for top-k most similar documents using embeddings.
+        Search for top-k most similar documents and include similarity score.
         """
         query_vector = embeddings.embed_text(query)
         response = self.client.search(
@@ -64,4 +63,9 @@ class QdrantClientWrapper:
             query_vector=query_vector,
             limit=k
         )
-        return [Document(page_content=p.payload.get("content", ""), metadata=p.payload) for p in response]
+        results = []
+        for p in response:
+            content = p.payload.get("content", "")
+            score = 1 - p.score if p.score is not None else None  # Qdrant returns distance, convert to similarity
+            results.append(Document(page_content=content, metadata=p.payload, score=score))
+        return results
