@@ -1,43 +1,75 @@
-from typing import Dict, Optional, List
+import google.generativeai as genai
 from app.utils.chunking import chunk_text
 from app.services.embeddings_gemini import GeminiEmbeddingService
-from app.services.vectorstore_qdrant import QdrantClientWrapper, Document
+from app.services.vectorstore_qdrant import QdrantClientWrapper
+from app.core.config import settings
+
 
 class SemanticSearchService:
     """
-    Implements a RAG (Retrieval-Augmented Generation) pipeline
-    using Gemini embeddings and Qdrant vector database.
+    End-to-end RAG (Retrieval-Augmented Generation) pipeline:
+    1. Chunk & embed documents
+    2. Store embeddings to Qdrant
+    3. Retrieve relevant context
+    4. Generate final answer with Gemini LLM
     """
 
     def __init__(self):
         self.embeddings = GeminiEmbeddingService()
-        self.collection = "documents"
-        self.qdrant = QdrantClientWrapper(collection_name=self.collection)
+        self.qdrant = QdrantClientWrapper(collection_name="documents")
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        self.llm = genai.GenerativeModel("gemini-pro")
 
-    def index_text(self, text: str, metadata: Optional[Dict] = None) -> Dict:
+    def index_text(self, text: str, metadata: dict | None = None):
         """
-        Split a large document into chunks, embed each chunk, and store in Qdrant.
+        Chunk a large document, embed each chunk using Gemini, and store in Qdrant.
         """
         chunks = chunk_text(text)
-        documents: List[Document] = [
-            Document(page_content=chunk, metadata=(metadata or {})) for chunk in chunks
-        ]
-        self.qdrant.add_documents(documents, embeddings=self.embeddings)
+        vectors = self.embeddings.embed_texts(chunks)
+        payloads = [{"content": c, **(metadata or {})} for c in chunks]
+        self.qdrant.upsert_vectors(self.collection, vectors, payloads)
         return {"chunks_indexed": len(chunks)}
 
-    def search(self, query: str, top_k: int = 3) -> Dict:
+    def search(self, query: str, top_k: int = 3):
         """
-        Perform semantic search using Gemini embeddings.
-        Returns top-k most similar text chunks from Qdrant with scores.
+        Retrieve the most relevant chunks from Qdrant using semantic similarity.
         """
-        results: List[Document] = self.qdrant.similarity_search(query, embeddings=self.embeddings, k=top_k)
+        query_vector = self.embeddings.embed_text(query)
+        results = self.qdrant.search_vectors(self.collection, query_vector, top_k=top_k)
+
+        return [
+            {"score": r.score, "content": r.payload.get("content", "")}
+            for r in results
+        ]
+
+    def generate_answer(self, query: str, top_k: int = 3):
+        """
+        Combine retrieval and generation:
+        1. Retrieve top-k similar chunks
+        2. Compose a prompt with context
+        3. Ask Gemini to generate a context-aware answer
+        """
+        retrieved_docs = self.search(query, top_k)
+        if not retrieved_docs:
+            return {"answer": "No relevant information found."}
+
+        # Combine top-k chunks into one context string
+        context = "\n\n".join([doc["content"] for doc in retrieved_docs])
+
+        # Build a clear, concise system prompt
+        prompt = f"""
+        You are a helpful assistant. 
+        Use the following context to answer the user's question accurately and clearly.
+
+        Context:
+        {context}
+
+        Question: {query}
+        """
+
+        response = self.llm.generate_content(prompt)
         return {
             "query": query,
-            "matches": [
-                {
-                    "score": r.score,
-                    "content": r.page_content,
-                    **r.metadata
-                } for r in results
-            ]
+            "answer": response.text.strip(),
+            "context_used": [doc["content"] for doc in retrieved_docs],
         }

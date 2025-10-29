@@ -28,6 +28,7 @@ class QdrantClientWrapper:
         self.client = QdrantClient(
             url=settings.QDRANT_URL,
             api_key=settings.QDRANT_API_KEY,
+            check_compatibility=False
         )
 
         # Ensure collection exists

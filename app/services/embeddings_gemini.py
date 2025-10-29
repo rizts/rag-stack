@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+from app.core.config import settings
 
 class GeminiEmbeddingService:
     """
@@ -8,7 +9,7 @@ class GeminiEmbeddingService:
     """
 
     def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY")
+        api_key = settings.GEMINI_API_KEY
         if not api_key:
             raise ValueError("Missing GEMINI_API_KEY environment variable.")
         genai.configure(api_key=api_key)

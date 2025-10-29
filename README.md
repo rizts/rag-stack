@@ -45,7 +45,7 @@ You can run a local Qdrant vector database using docker-compose.
 
 ```bash
 cd docker
-docker-compose up -d
+docker compose up -d
 ```
 
 ### **Project Structure**
@@ -77,6 +77,36 @@ rag-stack/
 - `app/utils` → Helper utilities (LangChain chunking)
 - `app/core` → Config & logging
 
+
+## 🧠 RAG API Endpoints
+
+### 1️⃣ Index new content
+```bash
+curl -X POST "http://localhost:8000/rag/index" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "content=FastAPI is a Python framework for building APIs quickly."
+```
+
+Response:
+```json
+{"status": "indexed", "detail": {"chunks_indexed": 1}}
+```
+
+### 2️⃣ Query the knowledge base
+```bash
+curl -X POST "http://localhost:8000/rag/query" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "query=What is FastAPI used for?"
+```
+
+Response:
+```json
+{
+  "query": "What is FastAPI used for?",
+  "answer": "FastAPI is used to build APIs quickly and efficiently in Python.",
+  "context_used": ["FastAPI is a Python framework for building APIs quickly."]
+}
+```
 
 Author: [Risdy](https://linkedin.com/in/rizts)
 

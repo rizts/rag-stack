@@ -49,6 +49,7 @@ pydantic-settings==2.11.0
 pydantic_core==2.41.4
 pyparsing==3.2.5
 python-dotenv==1.2.1
+python-multipart==0.0.20
 PyYAML==6.0.3
 qdrant-client==1.15.1
 requests==2.32.5
