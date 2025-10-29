@@ -12,10 +12,13 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = Field("development", description="Environment: dev/staging/prod")
 
     # === Google Gemini ===
-    GEMINI_API_KEY: str = Field(..., description="Google Generative AI API key")
+    GEMINI_API_KEY: str = Field(..., description="Google Gemini API key")
+
+    # === HuggingFace ===
+    HF_API_KEY: str = Field(..., description="HuggingFace AI API key")
     EMBEDDING_MODEL_NAME: str = Field(
-        "models/text-embedding-004",
-        description="Gemini embedding model (default: text-embedding-004)"
+        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        description="HuggingFace embedding model (default: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)"
     )
 
     # === Qdrant Vector DB ===

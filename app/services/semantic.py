@@ -1,6 +1,6 @@
 import google.generativeai as genai
 from app.utils.chunking import chunk_text
-from app.services.embeddings_gemini import GeminiEmbeddingService
+from app.services.embeddings_huggingface import HuggingFaceEmbeddingService
 from app.services.vectorstore_qdrant import QdrantClientWrapper
 from app.core.config import settings
 
@@ -15,10 +15,11 @@ class SemanticSearchService:
     """
 
     def __init__(self):
-        self.embeddings = GeminiEmbeddingService()
-        self.qdrant = QdrantClientWrapper(collection_name="documents")
+        self.collection_name = "documents"
+        self.embeddings = HuggingFaceEmbeddingService()
+        self.qdrant = QdrantClientWrapper(collection_name=self.collection_name, vector_size=384)  # HuggingFace embeddings are 384-dim
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.llm = genai.GenerativeModel("gemini-pro")
+        self.llm = genai.GenerativeModel("gemini-1.0-pro")
 
     def index_text(self, text: str, metadata: dict | None = None):
         """
@@ -27,7 +28,7 @@ class SemanticSearchService:
         chunks = chunk_text(text)
         vectors = self.embeddings.embed_texts(chunks)
         payloads = [{"content": c, **(metadata or {})} for c in chunks]
-        self.qdrant.upsert_vectors(self.collection, vectors, payloads)
+        self.qdrant.upsert_vectors(self.collection_name, vectors, payloads)
         return {"chunks_indexed": len(chunks)}
 
     def search(self, query: str, top_k: int = 3):
@@ -35,7 +36,7 @@ class SemanticSearchService:
         Retrieve the most relevant chunks from Qdrant using semantic similarity.
         """
         query_vector = self.embeddings.embed_text(query)
-        results = self.qdrant.search_vectors(self.collection, query_vector, top_k=top_k)
+        results = self.qdrant.search_vectors(self.collection_name, query_vector, top_k=top_k)
 
         return [
             {"score": r.score, "content": r.payload.get("content", "")}
