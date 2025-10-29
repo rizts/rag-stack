@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # === CORS / Frontend ===
     CORS_ORIGINS: str = "http://localhost:3000"
 
+    # === Railway ====#
+    RAILWAY_TOKEN: str = Field(..., description="Railway Token")
+
     @property
     def cors_origins_list(self) -> List[str]:
         """Split CORS_ORIGINS env into a list automatically."""

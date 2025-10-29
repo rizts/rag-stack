@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rag-stack"
+version = "0.1.0"
+description = "A RAG (Retrieval Augmented Generation) API"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi==0.120.1",
+    "uvicorn==0.38.0",
+    "qdrant-client==1.15.1",
+    "google-ai-generativelanguage==0.6.15",
+    "google-generativeai==0.8.5",
+    "langchain==1.0.2",
+    "langchain-google-genai==0.3.14",
+    "langgraph==1.0.1",
+    "python-dotenv==1.2.1",
+    "pydantic==2.12.3",
+    "pydantic-settings==2.11.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff"
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.setuptools.packages.find]
+where = ["."]

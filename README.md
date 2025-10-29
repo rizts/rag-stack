@@ -1,3 +1,7 @@
+[![CI](https://github.com/rizts/rag-stack/actions/workflows/ci.yml/badge.svg)](https://github.com/rizts/rag-stack/actions/workflows/ci.yml)
+[![Deploy to Railway](https://github.com/rizts/rag-stack/actions/workflows/cd.yml/badge.svg)](https://github.com/rizts/rag-stack/actions/workflows/cd.yml)
+
+
 # 🧠 AI Knowledge Service – RAG & FastAPI
 
 This project is a **Refactored and Production-Ready version** of the original [rizts/rag-ai-concept](https://github.com/rizts/rag-ai-concept).  
