@@ -13,6 +13,5 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 # Copy app
 COPY . .
-
-# Railway provides $PORT dynamically
-CMD gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:$PORT --workers 2
+RUN chmod +x start.sh
+CMD ["./start.sh"]
