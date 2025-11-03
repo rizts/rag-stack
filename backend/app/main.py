@@ -22,3 +22,18 @@ app.add_middleware(
 # Register routers
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(rag.router, prefix="/rag", tags=["rag"])
+
+# Root endpoint (optional)
+@app.get("/")
+def root():
+    return {"message": "RAG API is running", "version": settings.APP_VERSION}
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host=settings.HOST,
+        port=settings.APP_PORT,
+        reload=True,
+    )
