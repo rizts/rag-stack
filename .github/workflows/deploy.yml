@@ -93,13 +93,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
       - name: Deploy to Railway
         id: deploy
-        uses: bervProject/railway-deploy@main
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          railway_project_id: ${{ secrets.RAILWAY_PROJECT_ID }}
-          path: ./backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          cd backend
+          railway up --detach --service ${{ secrets.RAILWAY_SERVICE_NAME }}
 
       - name: Wait for deployment
         run: |
@@ -190,13 +194,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
       - name: Deploy Preview to Railway
         id: deploy
-        uses: bervProject/railway-deploy@main
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          railway_project_id: ${{ secrets.RAILWAY_PROJECT_ID }}
-          path: ./backend
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          cd backend
+          railway up --detach --service ${{ secrets.RAILWAY_SERVICE_NAME }}
 
       - name: Wait for deployment
         run: sleep 20
