@@ -103,8 +103,8 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           cd backend
-          # Login to Railway using the token
-          echo $RAILWAY_TOKEN | railway login
+          # Set the Railway token as environment variable for authentication
+          export RAILWAY_TOKEN="${{ secrets.RAILWAY_TOKEN }}"
           
           # Deploy to Railway using the project ID
           railway up --project ${{ secrets.RAILWAY_PROJECT_ID }} --detach
@@ -217,8 +217,8 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           cd backend
-          # Login to Railway using the token
-          echo $RAILWAY_TOKEN | railway login
+          # Set the Railway token as environment variable for authentication
+          export RAILWAY_TOKEN="${{ secrets.RAILWAY_TOKEN }}"
           
           # Deploy to Railway using the project ID
           railway up --project ${{ secrets.RAILWAY_PROJECT_ID }} --detach
