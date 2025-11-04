@@ -100,21 +100,23 @@ jobs:
         id: deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           cd backend
-          railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --detach
+          # Login to Railway using the token
+          echo $RAILWAY_TOKEN | railway login
           
-          # Get deployment URL
-          sleep 10
-          DOMAIN=$(railway domain --json 2>/dev/null | jq -r '.[0].domain' || echo "")
+          # Deploy to Railway using the project ID
+          railway up --project ${{ secrets.RAILWAY_PROJECT_ID }} --detach
           
-          # Fallback if domain command fails
-          if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "null" ]; then
-            DOMAIN="rag-stack-production.up.railway.app"
-          fi
+          # Wait for deployment to process
+          sleep 20
           
-          echo "url=https://$DOMAIN" >> $GITHUB_OUTPUT
-          echo "Deployed to: https://$DOMAIN"
+          # Construct the URL using the project ID
+          PROJECT_URL="${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app"
+          
+          echo "url=https://$PROJECT_URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: https://$PROJECT_URL"
 
       - name: Wait for deployment
         run: |
@@ -212,21 +214,23 @@ jobs:
         id: deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           cd backend
-          railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --detach
+          # Login to Railway using the token
+          echo $RAILWAY_TOKEN | railway login
           
-          # Get deployment URL
-          sleep 10
-          DOMAIN=$(railway domain --json 2>/dev/null | jq -r '.[0].domain' || echo "")
+          # Deploy to Railway using the project ID
+          railway up --project ${{ secrets.RAILWAY_PROJECT_ID }} --detach
           
-          # Fallback
-          if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "null" ]; then
-            DOMAIN="rag-stack-production.up.railway.app"
-          fi
+          # Wait for deployment to process
+          sleep 20
           
-          echo "url=https://$DOMAIN" >> $GITHUB_OUTPUT
-          echo "Preview deployed to: https://$DOMAIN"
+          # Construct the URL using the project ID
+          PROJECT_URL="${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app"
+          
+          echo "url=https://$PROJECT_URL" >> $GITHUB_OUTPUT
+          echo "Preview deployed to: https://$PROJECT_URL"
 
       - name: Wait for deployment
         run: sleep 20
