@@ -108,7 +108,7 @@ jobs:
           export RAILWAY_TOKEN
           
           # Link to the project first
-          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway link
           
           # Deploy to Railway
           railway up --detach
@@ -226,7 +226,7 @@ jobs:
           export RAILWAY_TOKEN
           
           # Link to the project first
-          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway link
           
           # Deploy to Railway
           railway up --detach
