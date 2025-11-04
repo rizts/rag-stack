@@ -96,15 +96,16 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-          # Deploy to Railway
+      - name: Deploy to Railway
+        id: deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+        run: |
+          cd backend
           railway up --detach --project-id ${{ secrets.RAILWAY_PROJECT_ID }}
-          
-          # Wait for deployment to process
           sleep 20
-          
-          # Construct the URL using the project ID
           PROJECT_URL="${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app"
-          
           echo "url=https://$PROJECT_URL" >> $GITHUB_OUTPUT
           echo "Deployed to: https://$PROJECT_URL"
 
