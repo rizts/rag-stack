@@ -103,7 +103,7 @@ jobs:
           RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           cd backend
-          railway up --detach --project-id ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway up --detach
           sleep 20
           PROJECT_URL="${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app"
           echo "url=https://$PROJECT_URL" >> $GITHUB_OUTPUT
@@ -210,7 +210,7 @@ jobs:
           cd backend
           
           # Deploy to Railway
-          railway up --detach --project-id ${{ secrets.RAILWAY_PROJECT_ID }}
+          railway up --detach
           
           # Wait for deployment to process
           sleep 20
