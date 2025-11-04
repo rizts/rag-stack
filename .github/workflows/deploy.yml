@@ -96,19 +96,8 @@ jobs:
       - name: Install Railway CLI
         run: npm i -g @railway/cli
 
-      - name: Deploy to Railway
-        id: deploy
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
-        run: |
-          cd backend
-          
-          # Link to the project first
-          railway link
-          
           # Deploy to Railway
-          railway up --detach
+          railway up --detach --project-id ${{ secrets.RAILWAY_PROJECT_ID }}
           
           # Wait for deployment to process
           sleep 20
@@ -219,11 +208,8 @@ jobs:
         run: |
           cd backend
           
-          # Link to the project first
-          railway link
-          
           # Deploy to Railway
-          railway up --detach
+          railway up --detach --project-id ${{ secrets.RAILWAY_PROJECT_ID }}
           
           # Wait for deployment to process
           sleep 20
