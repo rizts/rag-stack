@@ -102,11 +102,11 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           cd backend
-          # Initialize the project using the project ID
-          railway init --id ${{ secrets.RAILWAY_PROJECT_ID }}
-          
           # Set the Railway token as environment variable for authentication
           export RAILWAY_TOKEN="${{ secrets.RAILWAY_TOKEN }}"
+          
+          # Link the project using the project ID
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
           
           # Deploy to Railway
           railway up --detach
@@ -218,11 +218,11 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
           cd backend
-          # Initialize the project using the project ID
-          railway init --id ${{ secrets.RAILWAY_PROJECT_ID }}
-          
           # Set the Railway token as environment variable for authentication
           export RAILWAY_TOKEN="${{ secrets.RAILWAY_TOKEN }}"
+          
+          # Link the project using the project ID
+          railway link ${{ secrets.RAILWAY_PROJECT_ID }}
           
           # Deploy to Railway
           railway up --detach
