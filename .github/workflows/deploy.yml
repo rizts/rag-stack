@@ -149,12 +149,16 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
 
       - name: Build Project Artifacts
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_API_BASE: ${{ env.BACKEND_URL }}
         run: vercel build --prod --token=$VERCEL_TOKEN
 
@@ -163,8 +167,10 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }})
+          url=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN)
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "✅ Frontend deployed to: $url"
           echo "🔌 Backend URL: ${{ env.BACKEND_URL }}"
