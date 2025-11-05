@@ -13,6 +13,7 @@ on:
 env:
   NODE_VERSION: '20'
   PYTHON_VERSION: '3.11'
+  BACKEND_URL: 'https://rag-stack-production.up.railway.app'
 
 jobs:
   # Job untuk test backend
@@ -79,6 +80,30 @@ jobs:
         working-directory: ./frontend
         run: npm run build
 
+  # Dummy job for backend deployment (Railway auto-deploys via GitHub integration)
+  deploy-backend-production:
+    runs-on: ubuntu-latest
+    needs: test-backend
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    outputs:
+      backend_url: ${{ env.BACKEND_URL }}
+    steps:
+      - name: Backend Auto-Deploy
+        run: |
+          echo "Railway automatically deploys backend from GitHub"
+          echo "Backend URL: ${{ env.BACKEND_URL }}"
+
+      - name: Comment backend deployment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: '🚀 **Backend auto-deployed by Railway!**\n\n🔗 **URL:** ${{ env.BACKEND_URL }}\n\n✅ Deployment triggered by push to main'
+            })
+
   # Job untuk deploy frontend ke Vercel (Production)
   deploy-frontend-production:
     runs-on: ubuntu-latest
@@ -113,7 +138,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          VITE_API_BASE: ${{ needs.deploy-backend-production.outputs.backend_url }}
+          VITE_API_BASE: ${{ env.BACKEND_URL }}
         run: vercel build --prod --token=$VERCEL_TOKEN
 
       - name: Deploy to Vercel
@@ -135,43 +160,23 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               commit_sha: context.sha,
-              body: '🚀 **Frontend deployed to production!**\n\n🔗 **URL:** ${{ steps.deploy.outputs.url }}\n🔌 **Backend:** ${{ needs.deploy-backend-production.outputs.backend_url }}\n\n✅ Deployment successful'
+              body: '🚀 **Frontend deployed to production!**\n\n🔗 **URL:** ${{ steps.deploy.outputs.url }}\n🔌 **Backend:** ${{ env.BACKEND_URL }}\n\n✅ Deployment successful'
             })
 
-  # Job untuk deploy backend preview (PR)
+  # Dummy job for backend preview (Railway handles this)
   deploy-backend-preview:
     runs-on: ubuntu-latest
     needs: test-backend
     if: github.event_name == 'pull_request'
-    environment:
-      name: preview-backend-pr-${{ github.event.pull_request.number }}
-      url: ${{ steps.deploy.outputs.url }}
     outputs:
-      backend_url: ${{ steps.deploy.outputs.url }}
+      backend_url: ${{ env.BACKEND_URL }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm i -g @railway/cli
-
-      - name: Deploy Preview to Railway
-        id: deploy
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+      - name: Backend Preview Info
         run: |
-          cd backend
-          railway up --detach --service ${{ secrets.RAILWAY_SERVICE_NAME }}
-          sleep 20
-          PROJECT_URL="${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app"
-          echo "url=https://$PROJECT_URL" >> $GITHUB_OUTPUT
-          echo "Preview deployed to: https://$PROJECT_URL"
+          echo "Railway handles preview deployments automatically"
+          echo "Using production backend URL for preview: ${{ env.BACKEND_URL }}"
 
-      - name: Wait for deployment
-        run: sleep 20
-
-      - name: Comment PR with preview URL
+      - name: Comment PR with backend info
         uses: actions/github-script@v7
         with:
           script: |
@@ -179,7 +184,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## 🔍 Preview Deployment - Backend\n\n✅ Backend preview deployed successfully!\n\n🔗 **Preview URL:** ${{ steps.deploy.outputs.url }}\n\n📝 This preview will be updated on every commit to this PR.\n\n---\n\n### 📊 Deployment Details\n- **Commit:** `${{ github.event.pull_request.head.sha }}`\n- **Branch:** `${{ github.event.pull_request.head.ref }}`\n- **Environment:** Preview'
+              body: '## 🔍 Preview Deployment - Backend\n\n✅ Backend tests passed!\n\n🔗 **Backend URL:** ${{ env.BACKEND_URL }}\n\n📝 Railway auto-deploys backend. Frontend preview will use production backend.'
             })
 
   # Job untuk deploy frontend preview (PR)
@@ -216,7 +221,7 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          VITE_API_BASE: ${{ needs.deploy-backend-preview.outputs.backend_url }}
+          VITE_API_BASE: ${{ env.BACKEND_URL }}
         run: vercel build --token=$VERCEL_TOKEN
 
       - name: Deploy Preview to Vercel
@@ -238,5 +243,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## 🔍 Preview Deployment - Frontend\n\n✅ Frontend preview deployed successfully!\n\n🔗 **Preview URL:** ${{ steps.deploy.outputs.url }}\n🔌 **Backend URL:** ${{ needs.deploy-backend-preview.outputs.backend_url }}\n\n📝 This preview will be updated on every commit to this PR.\n\n---\n\n### 📊 Deployment Details\n- **Commit:** `${{ github.event.pull_request.head.sha }}`\n- **Branch:** `${{ github.event.pull_request.head.ref }}`\n- **Environment:** Preview\n\n### 🧪 Test your changes\nClick the preview URL above to test the frontend connected to the preview backend.'
+              body: '## 🔍 Preview Deployment - Frontend\n\n✅ Frontend preview deployed successfully!\n\n🔗 **Preview URL:** ${{ steps.deploy.outputs.url }}\n🔌 **Backend URL:** ${{ env.BACKEND_URL }}\n\n📝 This preview uses production backend.\n\n---\n\n### 📊 Deployment Details\n- **Commit:** `${{ github.event.pull_request.head.sha }}`\n- **Branch:** `${{ github.event.pull_request.head.ref }}`\n- **Environment:** Preview\n\n### 🧪 Test your changes\nClick the preview URL above to test your frontend changes.'
             })
