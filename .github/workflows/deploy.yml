@@ -100,10 +100,9 @@ jobs:
         id: deploy
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
         run: |
           cd backend
-          railway up --detach --service ${{ secrets.RAILWAY_SERVICE_NAME }}
+          railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --detach
           sleep 20
           PROJECT_URL="${{ secrets.RAILWAY_PROJECT_ID }}.up.railway.app"
           echo "url=https://$PROJECT_URL" >> $GITHUB_OUTPUT
