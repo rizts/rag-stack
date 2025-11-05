@@ -5,12 +5,22 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+      - '*.md'
+      - '*.json'
   pull_request:
     branches:
       - main
       - develop
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
 
-# Required permissions for PR comments
+# Required permissions
 permissions:
   contents: read
   pull-requests: write
@@ -22,9 +32,33 @@ env:
   BACKEND_URL: 'https://rag-stack-production.up.railway.app'
 
 jobs:
+  # Detect changes
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check for changes
+        uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/**'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/**'
+
   # Job untuk test backend
   test-backend:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,6 +91,8 @@ jobs:
   # Job untuk test frontend
   test-frontend:
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.frontend == 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -89,8 +125,11 @@ jobs:
   # Job untuk deploy frontend ke Vercel (Production)
   deploy-frontend-production:
     runs-on: ubuntu-latest
-    needs: [test-frontend, test-backend]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect-changes, test-frontend]
+    if: |
+      github.ref == 'refs/heads/main' && 
+      github.event_name == 'push' &&
+      needs.detect-changes.outputs.frontend == 'true'
     environment:
       name: production-frontend
       url: ${{ steps.deploy.outputs.url }}
@@ -110,16 +149,12 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }}
 
       - name: Build Project Artifacts
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_API_BASE: ${{ env.BACKEND_URL }}
         run: vercel build --prod --token=$VERCEL_TOKEN
 
@@ -128,19 +163,28 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN)
+          url=$(vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }})
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "✅ Frontend deployed to: $url"
           echo "🔌 Backend URL: ${{ env.BACKEND_URL }}"
 
+      - name: Create deployment summary
+        run: |
+          echo "## 🚀 Production Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **Frontend deployed successfully!**" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 **Frontend URL:** ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "🔌 **Backend URL:** ${{ env.BACKEND_URL }}" >> $GITHUB_STEP_SUMMARY
+
   # Job untuk deploy frontend preview (PR)
   deploy-frontend-preview:
     runs-on: ubuntu-latest
-    needs: [test-frontend, test-backend]
-    if: github.event_name == 'pull_request'
+    needs: [detect-changes, test-frontend]
+    if: |
+      github.event_name == 'pull_request' &&
+      needs.detect-changes.outputs.frontend == 'true'
     environment:
       name: preview-frontend-pr-${{ github.event.pull_request.number }}
       url: ${{ steps.deploy.outputs.url }}
@@ -160,16 +204,12 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }}
 
       - name: Build Project Artifacts
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_API_BASE: ${{ env.BACKEND_URL }}
         run: vercel build --token=$VERCEL_TOKEN
 
@@ -178,10 +218,8 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+          url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }})
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "✅ Preview deployed to: $url"
 
