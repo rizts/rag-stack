@@ -38,6 +38,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      root: ${{ steps.filter.outputs.root }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,9 +50,11 @@ jobs:
           filters: |
             backend:
               - 'backend/**'
-              - '.github/workflows/**'
             frontend:
               - 'frontend/**'
+            root:
+              - '*.md'
+              - '*.json'
               - '.github/workflows/**'
 
   # Job untuk test backend
@@ -210,12 +213,16 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
 
       - name: Build Project Artifacts
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VITE_API_BASE: ${{ env.BACKEND_URL }}
         run: vercel build --token=$VERCEL_TOKEN
 
@@ -224,8 +231,10 @@ jobs:
         working-directory: ./frontend
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: |
-          url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN --scope=${{ secrets.VERCEL_ORG_ID }})
+          url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
           echo "url=$url" >> $GITHUB_OUTPUT
           echo "✅ Preview deployed to: $url"
 
