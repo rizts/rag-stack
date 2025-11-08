@@ -21,3 +21,6 @@ qdrant-client>=1.9.0
 
 ## HuggingFace
 huggingface-hub==0.29.0
+
+#PDF Lib
+PyPDF2
