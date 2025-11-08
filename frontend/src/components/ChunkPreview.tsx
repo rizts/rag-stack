@@ -1,12 +1,5 @@
-interface PreviewData {
-  filename: string;
-  total_chunks: number;
-  sample_chunks: string[];
-}
+import type { ChunkPreviewProps } from "@/types/preview";
 
-interface ChunkPreviewProps {
-  preview: PreviewData | null;
-}
 
 export default function ChunkPreview({ preview }: ChunkPreviewProps) {
   if (!preview) return null;

@@ -1,11 +1,7 @@
-import { useState, FormEvent } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import axios from "axios";
-
-interface UploadPreview {
-  filename: string;
-  total_chunks: number;
-  sample_chunks: string[];
-}
+import type { UploadPreview } from "@/types/preview";
 
 interface FileUploadProps {
   onPreview: (data: UploadPreview) => void;

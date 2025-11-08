@@ -1,13 +1,18 @@
 import { useState } from "react";
 import QueryForm from "./components/QueryForm";
 import AnswerCard from "./components/AnswerCard";
+import FileUpload from "./components/FileUpload";
+import FilePreview from "./components/FilePreview";
+import ChunkPreview from "./components/ChunkPreview";
 import type { RAGResponse } from "@/types/rag";
+import type { UploadPreview } from "@/types/preview";
 
 /**
  * Main app entry for RAG demo
  */
 export default function App() {
   const [result, setResult] = useState<RAGResponse | null>(null);
+  const [filePreview, setFilePreview] = useState<UploadPreview | null>(null);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 text-gray-800">
@@ -27,16 +32,40 @@ export default function App() {
         </header>
 
         <main className="space-y-10">
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div className="p-1 bg-gradient-to-r from-blue-500 to-indigo-500">
-              <div className="bg-white rounded-xl p-6 sm:p-8">
-                <QueryForm onResult={setResult} />
+          {/* File Upload and Query Form Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* File Upload Section - Left side */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+              <div className="p-1 bg-gradient-to-r from-green-500 to-emerald-500">
+                <div className="bg-white rounded-xl p-6 sm:p-8">
+                  <FileUpload onPreview={setFilePreview} />
+                </div>
+              </div>
+              
+              {/* File Preview Section */}
+              <div className="transition-all duration-300 mt-4">
+                <FilePreview preview={filePreview} />
+              </div>
+
+              {/* Chunk Preview Section */}
+              <div className="transition-all duration-300 mt-4">
+                <ChunkPreview preview={filePreview} />
               </div>
             </div>
-          </div>
 
-          <div className="transition-all duration-300">
-            <AnswerCard result={result} />
+            {/* Query Form Section - Right side */}
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+              <div className="p-1 bg-gradient-to-r from-blue-500 to-indigo-500">
+                <div className="bg-white rounded-xl p-6 sm:p-8">
+                  <QueryForm onResult={setResult} />
+                </div>
+              </div>
+
+              {/* Answer Card Section */}
+              <div className="transition-all duration-300 mt-4">
+                <AnswerCard result={result} />
+              </div>
+            </div>
           </div>
         </main>
 
