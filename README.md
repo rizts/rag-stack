@@ -16,15 +16,39 @@ It aims to be more structured, modular, and ready for real-world deployment, wit
 This project demonstrates a complete **AI pipeline** with:
 - 🧩 **Backend (FastAPI)** — API layer, Gemini integration, and LangChain-based chunking.
 - ⚛️ **Frontend (Vite + React + TypeScript)** — interactive RAG chat UI.
-- 🧠 **AI Layer** — intelligent chunking, HuggingFace embeddings, semantic retrieval, and Gemini answer generation.
+- 🧠 **AI Layer** — intelligent chunking, multiple embedding providers (Jina AI as default), semantic retrieval, and Gemini answer generation.
 - 💾 **Vector Database (Qdrant Cloud)** — document storage and vector similarity search.
 - 🚀 **CI/CD** — Automated deployment via GitHub Actions to Railway (backend) + Vercel (frontend).
 
 The goal is to demonstrate a production-level **Retrieval-Augmented Generation (RAG)** system that can:
 1. Process documents and intelligently chunk them using **LangChain**.
-2. Generate embeddings using **HuggingFace models** and store them in **Qdrant** Vector Database.
+2. Generate embeddings using **multiple embedding providers** with **Jina AI as the default** and store them in **Qdrant** Vector Database.
 3. Expose APIs for semantic search and knowledge retrieval.
 4. Integrate with modern DevOps practices to showcase AI orchestration lifecycle.
+
+### 🔄 Important Change: Multiple Embedding Providers
+
+**Recent Update:** We've implemented support for multiple embedding providers to give you flexibility in choosing the best service for your needs. The system now supports:
+- **Jina AI** (default) - Free 8000 requests/day
+- **Cohere** - 1000 requests/month free  
+- **Voyage AI** - 20M tokens/month free
+- **HuggingFace** - Legacy option for local models
+
+**Benefits:**
+- 🔄 **Flexibility** - Choose the provider that best fits your use case
+- 💰 **Cost optimization** - Select based on pricing and free tier options
+- 🚀 **Performance** - Different providers offer different strengths
+- 🛡️ **Privacy** - Option to use local models with HuggingFace
+
+**Configuration:**
+- Provide your `JINA_API_KEY` in environment variables
+- The service uses `jina-embeddings-v3` via Jina API
+
+**Note:** If you encounter issues with the default model not being available via the feature_extraction API, 
+consider using alternative models like `sentence-transformers/all-MiniLM-L6-v2` which are more reliably 
+supported on the Jina Inference API.
+
+This approach is specifically optimized for resource-constrained environments like Railway's free tier.
 
 ---
 
@@ -33,7 +57,7 @@ The goal is to demonstrate a production-level **Retrieval-Augmented Generation (
 ```mermaid
 graph TD
   A[📄 Document Upload] --> B[🔍 Intelligent Chunking LangChain]
-  B --> C[🔢 HuggingFace Embeddings]
+  B --> C[🔢 Multiple Embedding Providers (Jina AI Default)]
   C --> D[(🧠 Qdrant Vector DB)]
   E[💬 Query Request] --> F[Semantic Retrieval + Contextual Search]
   F --> G[🧠 Gemini Generative Response]
@@ -58,7 +82,7 @@ rag-stack/
 │   │   │   ├── config.py       # Centralized configuration
 │   │   │   └── logger.py       # Logging setup
 │   │   ├── services/
-│   │   │   ├── embeddings_huggingface.py  # HuggingFace embeddings
+│   │   │   ├── embeddings.py   # Local sentence-transformer embeddings
 │   │   │   ├── semantic.py     # Semantic search logic
 │   │   │   └── vectorstore_qdrant.py      # Qdrant integration
 │   │   ├── utils/
@@ -119,7 +143,7 @@ cp .env.example .env
 
 # Edit .env and add your API keys:
 # - GEMINI_API_KEY
-# - HF_API_KEY
+# - JINA_API_KEY
 # - QDRANT_URL (use localhost for local dev)
 ```
 
@@ -229,7 +253,14 @@ VERCEL_PROJECT_ID=prj_xxx
 **Railway (Backend):**
 ```bash
 GEMINI_API_KEY=your_key
-HF_API_KEY=your_key
+
+# Embedding Provider Configuration
+EMBEDDING_PROVIDER=jina  # Options: jina, cohere, voyage, huggingface
+JINA_API_KEY=your_key    # Required when EMBEDDING_PROVIDER=jina
+# COHERE_API_KEY=your_key  # Required when EMBEDDING_PROVIDER=cohere
+# VOYAGE_API_KEY=your_key  # Required when EMBEDDING_PROVIDER=voyage
+# HF_API_KEY=your_key      # Required when EMBEDDING_PROVIDER=huggingface
+
 QDRANT_URL=https://your-cluster.cloud.qdrant.io:6333
 QDRANT_API_KEY=your_key
 CORS_ORIGINS=https://your-app.vercel.app
@@ -256,9 +287,19 @@ APP_PORT=8000
 # Google Gemini
 GEMINI_API_KEY=your_gemini_api_key
 
-# HuggingFace
-HF_API_KEY=your_hf_api_key
-EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+# Embedding Provider Configuration (Choose one)
+EMBEDDING_PROVIDER=jina  # Options: jina, cohere, voyage, huggingface
+JINA_API_KEY=your_jina_api_key    # Required when EMBEDDING_PROVIDER=jina
+# COHERE_API_KEY=your_cohere_api_key  # Required when EMBEDDING_PROVIDER=cohere
+# VOYAGE_API_KEY=your_voyage_api_key  # Required when EMBEDDING_PROVIDER=voyage
+# HF_API_KEY=your_hf_api_key          # Required when EMBEDDING_PROVIDER=huggingface
+JINA_MODEL_NAME=jina-embeddings-v3  # Used when EMBEDDING_PROVIDER=jina
+# Alternative models if needed:
+# EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+# EMBEDDING_MODEL_NAME=intfloat/multilingual-e5-small
+# Alternative models if the above doesn't work: 
+# EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+# EMBEDDING_MODEL_NAME=intfloat/multilingual-e5-small
 
 # Qdrant
 QDRANT_URL=http://localhost:6333
@@ -380,7 +421,7 @@ Pull requests automatically get preview deployments:
 | Backend        | FastAPI, Python 3.11          |
 | Frontend       | React 18, TypeScript, Vite    |
 | AI/ML          | LangChain, Google Gemini      |
-| Embeddings     | HuggingFace Transformers      |
+| Embeddings     | Multiple Providers (Jina AI, Cohere, Voyage AI, HuggingFace) |
 | Vector DB      | Qdrant Cloud                  |
 | Deployment     | Railway (backend), Vercel     |
 | CI/CD          | GitHub Actions                |
@@ -393,7 +434,7 @@ Pull requests automatically get preview deployments:
 | Stage          | Component       | Description                                              |
 | -------------- | --------------- | -------------------------------------------------------- |
 | 1️⃣ Chunking   | LangChain       | Intelligent text splitting (size + overlap configurable) |
-| 2️⃣ Embedding  | HuggingFace     | Generate vector embeddings                               |
+| 2️⃣ Embedding  | Multiple Providers (Jina AI Default) | Generate vector embeddings using selected provider |
 | 3️⃣ Storage    | Qdrant Cloud    | Store embeddings and metadata                            |
 | 4️⃣ Query      | Semantic Search | Retrieve contextually similar chunks                     |
 | 5️⃣ Generation | Gemini          | Compose human-like, context-aware answers                |
@@ -444,7 +485,7 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 **[Risdy](https://linkedin.com/in/rizts)**  
 Remote Software Engineer (since 2013)  
-AI & Fullstack Developer — FastAPI | React | LangChain | Gemini | HuggingFace | Qdrant  
+AI & Fullstack Developer — FastAPI | React | LangChain | Gemini | Jina | Qdrant  
 📍 Based in Indonesia
 
 ---

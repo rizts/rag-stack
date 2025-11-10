@@ -1,6 +1,6 @@
 import google.generativeai as genai
 from app.utils.chunking import chunk_text
-from app.services.embeddings_huggingface import HuggingFaceEmbeddingService
+from app.services.embeddings import EmbeddingService
 from app.services.vectorstore_qdrant import QdrantClientWrapper
 from app.core.config import settings
 
@@ -8,7 +8,7 @@ from app.core.config import settings
 class SemanticSearchService:
     """
     End-to-end RAG (Retrieval-Augmented Generation) pipeline:
-    1. Chunk & embed documents
+    1. Chunk & embed documents using configured embedding provider
     2. Store embeddings to Qdrant
     3. Retrieve relevant context
     4. Generate final answer with Gemini LLM
@@ -16,14 +16,26 @@ class SemanticSearchService:
 
     def __init__(self):
         self.collection_name = "documents"
-        self.embeddings = HuggingFaceEmbeddingService()
-        self.qdrant = QdrantClientWrapper(collection_name=self.collection_name, vector_size=384)  # HuggingFace embeddings are 384-dim
+        
+        # Initialize embedding service (automatically detects provider from config)
+        self.embeddings = EmbeddingService()
+        
+        # Initialize Qdrant with dynamic vector size based on embedding provider
+        vector_size = settings.embedding_dimension
+        self.qdrant = QdrantClientWrapper(
+            collection_name=self.collection_name, 
+            vector_size=vector_size
+        )
+        
+        # Initialize Gemini LLM
         genai.configure(api_key=settings.GEMINI_API_KEY)
         self.llm = genai.GenerativeModel("gemini-1.0-pro")
+        
+        print(f"✅ SemanticSearchService initialized with {settings.EMBEDDING_PROVIDER} embeddings ({vector_size}D)")
 
     def index_text(self, text: str, metadata: dict | None = None):
         """
-        Chunk a large document, embed each chunk using Gemini, and store in Qdrant.
+        Chunk a large document, embed each chunk, and store in Qdrant.
         """
         chunks = chunk_text(text)
         vectors = self.embeddings.embed_texts(chunks)

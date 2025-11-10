@@ -19,8 +19,20 @@ google-generativeai>=0.3.0
 # === Vector DB ===
 qdrant-client>=1.9.0
 
-## HuggingFace
-huggingface-hub==0.29.0
+# === Embeddings (Jina AI - Primary) ===
+# Jina uses standard requests library (already included above)
 
-#PDF Lib
+# === Embeddings (Optional - install only if needed) ===
+# Uncomment the provider you want to use:
+
+# Cohere (if using EMBEDDING_PROVIDER=cohere)
+# cohere
+
+# Voyage AI (if using EMBEDDING_PROVIDER=voyage)
+# voyageai
+
+# HuggingFace (legacy - not recommended)
+# huggingface-hub==0.29.0
+
+# === PDF Processing ===
 PyPDF2

@@ -18,12 +18,31 @@ class Settings(BaseSettings):
     # === Google Gemini ===
     GEMINI_API_KEY: str = Field(..., description="Google Gemini API key")
 
-    # === HuggingFace (optional fallback for embeddings) ===
-    HF_API_KEY: Optional[str] = Field(None, description="HuggingFace API key (optional)")
-    EMBEDDING_MODEL_NAME: str = Field(
-        "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        description="HuggingFace embedding model (default: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2)"
+    # === Embedding Provider Configuration ===
+    EMBEDDING_PROVIDER: str = Field(
+        "jina",
+        description="Embedding provider: 'jina', 'cohere', 'voyage', or 'huggingface'"
     )
+    
+    # === Jina AI (Recommended for free tier) ===
+    JINA_API_KEY: Optional[str] = Field(None, description="Jina AI API key")
+    JINA_MODEL_NAME: str = Field(
+        "jina-embeddings-v3",
+        description="Jina embedding model (jina-embeddings-v3 or jina-embeddings-v2-base-en)"
+    )
+    
+    # === HuggingFace (Legacy - not recommended for free tier) ===
+    HF_API_KEY: Optional[str] = Field(None, description="HuggingFace API key")
+    EMBEDDING_MODEL_NAME: str = Field(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        description="HuggingFace embedding model (only if using HF provider)"
+    )
+    
+    # === Cohere (Alternative) ===
+    COHERE_API_KEY: Optional[str] = Field(None, description="Cohere API key")
+    
+    # === Voyage AI (Alternative) ===
+    VOYAGE_API_KEY: Optional[str] = Field(None, description="Voyage AI API key")
 
     # === Chunking ===
     CHUNK_SIZE: int = 1000
@@ -48,14 +67,31 @@ class Settings(BaseSettings):
     # === Model Config ===
     model_config = SettingsConfigDict(
         env_file=".env",
-        extra="ignore",  # Ignore unknown .env keys (avoids ValidationError)
-        case_sensitive=False  # Allow lowercase or uppercase env names
+        extra="ignore",
+        case_sensitive=False
     )
 
     @property
     def cors_origins_list(self) -> List[str]:
         """Split CORS_ORIGINS env into list automatically."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+    
+    @property
+    def embedding_dimension(self) -> int:
+        """Return embedding dimension based on provider and model."""
+        if self.EMBEDDING_PROVIDER == "jina":
+            if "v3" in self.JINA_MODEL_NAME:
+                return 1024  # jina-embeddings-v3
+            else:
+                return 768   # jina-embeddings-v2
+        elif self.EMBEDDING_PROVIDER == "cohere":
+            return 1024
+        elif self.EMBEDDING_PROVIDER == "voyage":
+            return 1024
+        elif self.EMBEDDING_PROVIDER == "huggingface":
+            return 384  # Default for sentence-transformers
+        else:
+            return 768  # Safe default
 
 
 # Global settings instance
